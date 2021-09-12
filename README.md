@@ -5,7 +5,7 @@ This project is about an experimental attempt to build a private blockchain base
 ## Customizing the GENESIS
 Every blockchain starts with a Genesis which specifies the initial state of the blockchain. This state will then be updated with transactions. Ledgers are managed by 'LedgerManagerImpl' located in '/src/ledger/LedgerManagerImpl.cpp'.
 A new ledger is then configed in 'startNewLedger' method:
-
+```
 LedgerManagerImpl::startNewLedger()
 {
     auto ledger = genesisLedger();
@@ -20,9 +20,9 @@ LedgerManagerImpl::startNewLedger()
 
     startNewLedger(ledger);
 }
-
+```
 As its seen here the ledger is initiated with the genesisLedger method:
-
+```
 LedgerManager::genesisLedger()
 {
     LedgerHeader result;
@@ -36,22 +36,23 @@ LedgerManager::genesisLedger()
     result.ledgerSeq = GENESIS_LEDGER_SEQ;
     return result;
 }
-
+```
 Which in turn gets the inital values from constant definitions (at the top of same file):
-
+```
 const uint32_t LedgerManager::GENESIS_LEDGER_SEQ = 1;
 const uint32_t LedgerManager::GENESIS_LEDGER_VERSION = 0;
 const uint32_t LedgerManager::GENESIS_LEDGER_BASE_FEE = 100;
 const uint32_t LedgerManager::GENESIS_LEDGER_BASE_RESERVE = 100000000;
 const uint32_t LedgerManager::GENESIS_LEDGER_MAX_TX_SIZE = 100;
 const int64_t LedgerManager::GENESIS_LEDGER_TOTAL_COINS = 1000000000000000000;
+```
 
 Therfore its obvious if one wants to tweak the initial value of total coins (i.e the value 1000000000000000000), she should change this constant value.
 
 ## Where the initial coins go
 After initiating the ledger with geneis, 'startNewLegder()' method calls its override, with the genesis. Here a transation is created which transfers the initial coin to some account. This account is automaticall created with the 'NetworkID' which is actually the 'Passphrase' from the configuration files. 
-```
 
+```
 void
 LedgerManagerImpl::startNewLedger(LedgerHeader const& genesisLedger)
 {
