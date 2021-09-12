@@ -1,5 +1,85 @@
-# Stellar Quickstart Docker Image
+# About
+This project is about an experimental attempt to build a private blockchain based on Stellar blockchain technology. The project is a fork of [docker-stellar-core-horizon](https://github.com/stellar/docker-stellar-core-horizon)
 
+# Points of interest
+## Customizing the GENESIS
+Every blockchain starts with a Genesis which specifies the initial state of the blockchain. This state will then be updated with transactions. Ledgers are managed by 'LedgerManagerImpl' located in '/src/ledger/LedgerManagerImpl.cpp'.
+A new ledger is then configed in 'startNewLedger' method:
+
+LedgerManagerImpl::startNewLedger()
+{
+    auto ledger = genesisLedger();
+    auto const& cfg = mApp.getConfig();
+    if (cfg.USE_CONFIG_FOR_GENESIS)
+    {
+        ledger.ledgerVersion = cfg.LEDGER_PROTOCOL_VERSION;
+        ledger.baseFee = cfg.TESTING_UPGRADE_DESIRED_FEE;
+        ledger.baseReserve = cfg.TESTING_UPGRADE_RESERVE;
+        ledger.maxTxSetSize = cfg.TESTING_UPGRADE_MAX_TX_SET_SIZE;
+    }
+
+    startNewLedger(ledger);
+}
+
+As its seen here the ledger is initiated with the genesisLedger method:
+
+LedgerManager::genesisLedger()
+{
+    LedgerHeader result;
+    // all fields are initialized by default to 0
+    // set the ones that are not 0
+    result.ledgerVersion = GENESIS_LEDGER_VERSION;
+    result.baseFee = GENESIS_LEDGER_BASE_FEE;
+    result.baseReserve = GENESIS_LEDGER_BASE_RESERVE;
+    result.maxTxSetSize = GENESIS_LEDGER_MAX_TX_SIZE;
+    result.totalCoins = GENESIS_LEDGER_TOTAL_COINS;
+    result.ledgerSeq = GENESIS_LEDGER_SEQ;
+    return result;
+}
+
+Which in turn gets the inital values from constant definitions (at the top of same file):
+
+const uint32_t LedgerManager::GENESIS_LEDGER_SEQ = 1;
+const uint32_t LedgerManager::GENESIS_LEDGER_VERSION = 0;
+const uint32_t LedgerManager::GENESIS_LEDGER_BASE_FEE = 100;
+const uint32_t LedgerManager::GENESIS_LEDGER_BASE_RESERVE = 100000000;
+const uint32_t LedgerManager::GENESIS_LEDGER_MAX_TX_SIZE = 100;
+const int64_t LedgerManager::GENESIS_LEDGER_TOTAL_COINS = 1000000000000000000;
+
+Therfore its obvious if one wants to tweak the initial value of total coins (i.e the value 1000000000000000000), she should change this constant value.
+
+## Where the initial coins go
+After initiating the ledger with geneis, 'startNewLegder()' method calls its override, with the genesis. Here a transation is created which transfers the initial coin to some account. This account is automaticall created with the 'NetworkID' which is actually the 'Passphrase' from the configuration files. 
+
+void
+LedgerManagerImpl::startNewLedger(LedgerHeader const& genesisLedger)
+{
+    auto ledgerTime = mLedgerClose.TimeScope();
+    SecretKey skey = SecretKey::fromSeed(mApp.getNetworkID());
+
+    LedgerTxn ltx(mApp.getLedgerTxnRoot(), false);
+    ltx.loadHeader().current() = genesisLedger;
+
+    LedgerEntry rootEntry;
+    rootEntry.lastModifiedLedgerSeq = 1;
+    rootEntry.data.type(ACCOUNT);
+    auto& rootAccount = rootEntry.data.account();
+    rootAccount.accountID = skey.getPublicKey();
+    rootAccount.thresholds[0] = 1;
+    rootAccount.balance = genesisLedger.totalCoins;
+    ltx.create(rootEntry);
+
+    CLOG_INFO(Ledger, "Established genesis ledger, closing");
+    CLOG_INFO(Ledger, "Root account: {}", skey.getStrKeyPublic());
+    CLOG_INFO(Ledger, "Root account seed: {}", skey.getStrKeySeed().value);
+    ledgerClosed(ltx);
+    ltx.commit();
+}
+
+* Reference :[StackExchande:How was the first stellar account created?](https://stellar.stackexchange.com/questions/1122/how-was-the-first-stellar-account-created/1123#1123)
+
+
+# Stellar Quickstart Docker Image
 This project provides a simple way to incorporate stellar-core and horizon into your private infrastructure, provided that you use docker.
 
 This image provides a default, non-validating, ephemeral configuration that should work for most developers.  By configuring a container using this image with a host-based volume (described below in the "Usage" section) an operator gains access to full configuration customization and persistence of data.
