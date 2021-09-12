@@ -81,6 +81,38 @@ LedgerManagerImpl::startNewLedger(LedgerHeader const& genesisLedger)
 
 * Reference :[StackExchande:How was the first stellar account created?](https://stellar.stackexchange.com/questions/1122/how-was-the-first-stellar-account-created/1123#1123)
 
+# How it Works
+The overall process is fairly simple. The 'Dockerfile' first adds the dependencies by adding and then running the dependencies script
+```
+    ADD dependencies /
+    RUN ["chmod", "+x", "dependencies"]
+    RUN /dependencies
+``` 
+Then it installs the stellar packages by adding and running 'install' script:
+```
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get -y install gnupg1 rsync wget
+    wget -qO - https://apt.stellar.org/SDF.asc | apt-key add -
+    echo "deb https://apt.stellar.org focal stable" >/etc/apt/sources.list.d/SDF.list
+    echo "deb https://apt.stellar.org focal unstable" >/etc/apt/sources.list.d/SDF-unstable.list
+    apt-get update
+    apt-get install -y stellar-core=${STELLAR_CORE_VERSION}
+    apt-get install -y stellar-horizon=${HORIZON_VERSION}
+    apt-get clean
+    echo "\nDone installing stellar-core and horizon...\n"
+```
+Here the 'stellar-core' and 'stellar-hoizon' packages are installed.
+Then at last config files are copied:
+
+```
+    RUN ["ln", "-s", "/opt/stellar", "/stellar"]
+    RUN ["ln", "-s", "/opt/stellar/core/etc/stellar-core.cfg", "/stellar-core.cfg"]
+    RUN ["ln", "-s", "/opt/stellar/horizon/etc/horizon.env", "/horizon.env"]
+    ADD common /opt/stellar-default/common
+    ADD pubnet /opt/stellar-default/pubnet
+    ADD testnet /opt/stellar-default/testnet
+    ADD standalone /opt/stellar-default/standalone
+```
 
 # Stellar Quickstart Docker Image
 This project provides a simple way to incorporate stellar-core and horizon into your private infrastructure, provided that you use docker.
