@@ -50,6 +50,7 @@ Therfore its obvious if one wants to tweak the initial value of total coins (i.e
 
 ## Where the initial coins go
 After initiating the ledger with geneis, 'startNewLegder()' method calls its override, with the genesis. Here a transation is created which transfers the initial coin to some account. This account is automaticall created with the 'NetworkID' which is actually the 'Passphrase' from the configuration files. 
+```
 
 void
 LedgerManagerImpl::startNewLedger(LedgerHeader const& genesisLedger)
@@ -75,6 +76,7 @@ LedgerManagerImpl::startNewLedger(LedgerHeader const& genesisLedger)
     ledgerClosed(ltx);
     ltx.commit();
 }
+```
 
 * Reference :[StackExchande:How was the first stellar account created?](https://stellar.stackexchange.com/questions/1122/how-was-the-first-stellar-account-created/1123#1123)
 
